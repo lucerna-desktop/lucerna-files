@@ -40,7 +40,10 @@ As duas fazem o mesmo, com os mesmos atalhos e a mesma configuração. A TUI rod
 - compactados abertos como pastas;
 - lixeira, renomeação em massa com prévia, permissões, checksums.
 
-## No Lucerna
+## Sozinho ou no Lucerna
+
+O explorador se instala e funciona sozinho, em qualquer distribuição e ambiente (KDE, GNOME e outros), com ou sem systemd, sem o shell e sem o `lucernad`. O que vem abaixo é um extra, que liga quando o shell está presente:
+
 
 - usa o tema do shell, inclusive o gerado do papel de parede;
 - o progresso das operações aparece na central, mesmo com o explorador fechado;

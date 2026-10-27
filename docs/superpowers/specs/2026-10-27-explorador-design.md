@@ -31,6 +31,7 @@ O `lucerna-files` junta o que cada explorador tem de melhor, sem o peso de nenhu
 - **A GUI em Qt é o padrão do ecossistema:** os outros apps (notes, routine, phone) poderão ganhar uma GUI com o mesmo código e a mesma organização. O explorador é o primeiro a seguir esse padrão (seção "Padrão de GUI do ecossistema").
 - **Ordem:** núcleo + TUI primeiro, depois a GUI, por último a integração com o shell.
 - **Não se limitar à lista:** incluir ideias e recursos a mais que façam sentido (seção "Recursos", marcados por origem).
+- **Funciona sozinho** (vale para todo app do ecossistema): instalar e usar o explorador não exige o shell, o `lucernad`, o Hyprland nem o systemd, em qualquer distribuição e ambiente (KDE, GNOME etc.). A integração com o shell é um extra que liga quando ele está presente. O `lucerna-sdk` entra só como biblioteca, na compilação. Ver "Uso sem o Lucerna".
 
 ## Decisões do assistente
 
@@ -90,6 +91,7 @@ O `lucerna-files` junta o que cada explorador tem de melhor, sem o peso de nenhu
 ## Anti-objetivos
 
 - **Depender do KDE, do GNOME ou do gvfs** (KIO, KF6, GLib/GIO, GTK, gvfs, tracker). Nenhum recurso justifica furar isso; um job do CI recusa.
+- **Exigir qualquer outra peça do ecossistema instalada** (o shell, o `lucernad`) ou o Hyprland e o systemd. Sem elas, o explorador funciona inteiro; a ausência do shell é silêncio, nunca erro nem espera.
 - **GUI lenta para abrir** (splash, carregar tudo antes da primeira pintura, QML não compilado).
 - **TUI e GUI divergirem** (uma ação existir só numa sem motivo de mídia, atalhos diferentes, configurações separadas).
 - **Perder dados numa operação** (sobrescrever sem perguntar nem guardar o antigo, mover entre discos apagando antes de confirmar a cópia, apagar definitivo por engano, deixar arquivo pela metade com o nome final).
@@ -185,8 +187,8 @@ lucerna-files/
 **Retomada depois de uma queda** *(assistente)*:
 
 - O diário (`~/.local/share/lucerna/files/journal.db`, SQLite em WAL, molde do `clipboard`) grava a operação inteira antes de começar e cada item ao terminar (origem, destino, o que foi para a lixeira, o modo antigo). Cópias usam um temporário no destino (`.<nome>.lucerna-part`) renomeado só no fim.
-- O serviço cai: o systemd o reinicia (`Restart=on-failure`). Na subida, toda operação que estava "em andamento" vira **"interrompida"** e fica **pausada**, sem retomar sozinha: os itens já concluídos ficam como estão, os temporários `.lucerna-part` daquela operação são apagados, e o item que estava pela metade recomeça do zero quando o usuário retomar.
-- Uma operação interrompida aparece na central (pelo item de progresso, com "Retomar" e "Cancelar") e na fila da TUI/GUI. Depois de um reinício do computador, ela aparece na próxima vez que o serviço subir (qualquer cliente, inclusive o shell ao pedir uma busca); nada sobe o serviço no login só por isso.
+- O serviço cai: o systemd o reinicia (`Restart=on-failure`); sem systemd, o próximo cliente que conectar o sobe (passo 2 acima), com a mesma retomada. Na subida, toda operação que estava "em andamento" vira **"interrompida"** e fica **pausada**, sem retomar sozinha: os itens já concluídos ficam como estão, os temporários `.lucerna-part` daquela operação são apagados, e o item que estava pela metade recomeça do zero quando o usuário retomar.
+- Uma operação interrompida aparece na fila da TUI/GUI e, com o shell presente, na central (pelo item de progresso, com "Retomar" e "Cancelar"). Depois de um reinício do computador, ela aparece na próxima vez que o serviço subir (qualquer cliente, inclusive o shell ao pedir uma busca); nada sobe o serviço no login só por isso.
 - "Cancelar" numa interrompida oferece desfazer o que já foi feito, pelo diário.
 
 **Desfazer** *(assistente)*: toda operação concluída fica no diário com o necessário para voltar: o caminho original (mover, renomear), a entrada da lixeira (apagar e **sobrescrever**: o arquivo antigo vai para a lixeira freedesktop antes da sobrescrita, inclusive numa extração por cima), o modo e o dono antigos (permissões em massa). Desfazer é uma operação nova na fila, com os mesmos conflitos.
@@ -217,7 +219,7 @@ lucerna-files/
    listagem, prévia e busca da pasta aberta: no processo da vista, pelo núcleo
 ```
 
-- **Progresso na central sem o shell segurar o serviço:** o shell não fica conectado ao `files.sock` (uma conexão permanente impediria a saída por ociosidade). É o serviço que, enquanto tem operação, põe um **item de progresso** no `shell.sock` (`progress.set {id, título, fração, detalhe, estado, ações}`), do mesmo jeito que um app põe um item na barra: pertence à conexão, some se o serviço sai, é reaplicado quando o shell recarrega. Os botões da central (pausar, retomar, cancelar, resolver conflito) fazem o shell conectar ao `files.sock` e chamar o método; o serviço está de pé, porque tem trabalho. *(assistente; pede a mudança no protocolo descrita adiante)*
+- **Progresso na central sem o shell segurar o serviço:** o shell não fica conectado ao `files.sock` (uma conexão permanente impediria a saída por ociosidade). É o serviço que, enquanto tem operação, põe um **item de progresso** no `shell.sock` (`progress.set {id, título, fração, detalhe, estado, ações}`), do mesmo jeito que um app põe um item na barra: pertence à conexão, some se o serviço sai, é reaplicado quando o shell recarrega. Os botões da central (pausar, retomar, cancelar, resolver conflito) fazem o shell conectar ao `files.sock` e chamar o método; o serviço está de pé, porque tem trabalho. **Sem o shell** (o `shell.sock` não existe ou caiu), o item vira nada, sem erro e sem espera, como a barra no SDK: a operação segue igual, o progresso fica na fila da TUI/GUI e o fim é avisado pela notificação do sistema; o SDK reaplica o item se o shell aparecer depois. *(assistente; pede a mudança no protocolo descrita adiante)*
 - **Launcher:** `services/FileSearch.qml` conecta ao `files.sock` quando o launcher abre a busca de arquivos, pede `search.files` e solta ao fechar; o serviço sobe pela ativação e sai 60 s depois. Sem o explorador instalado, o launcher continua no `file-search.sh` (princípio do adaptador). *(assistente)*
 - **TUI ↔ GUI:** "abrir na GUI" roda `lucerna-files-gui --open <pasta> [--select <arquivo>]`; com a GUI já aberta, o pedido vai pelo D-Bus ao processo existente, que abre uma janela nova *(assistente)*. "Abrir na TUI" pede `tui.open` ao shell (ou abre o terminal configurado, sem shell). A sessão (abas) é gravada pelo `lucerna-files-app` num formato só.
 - **Configuração e atalhos:** `~/.config/lucerna/files.toml`, lido pelas vistas e pelo serviço, observado (mudou, aplica sem reiniciar).
@@ -241,11 +243,29 @@ O aviso de pendrive precisa existir com o explorador fechado, e o serviço do ex
 ### Integração com o sistema (sem gvfs)
 
 - **Montagens locais:** udisks2 por `zbus` (D-Bus do sistema), no serviço, com prazo em toda chamada. Montar, desmontar, ejetar, desligar a energia, desbloquear LUKS (a senha é pedida pela vista que pediu).
-- **Rede e nuvem:** "Conexões" na configuração (SFTP, SMB, rclone). Montar = `rclone mount` / `sshfs` / `mount.cifs` como unidade transitória do systemd do usuário (`systemd-run --user`), para a montagem não depender da janela nem do serviço. *(assistente)*
+- **Rede e nuvem:** "Conexões" na configuração (SFTP, SMB, rclone). Montar = `rclone mount` / `sshfs` / `mount.cifs` como unidade transitória do systemd do usuário (`systemd-run --user`), para a montagem não depender da janela nem do serviço; sem o systemd do usuário, o serviço roda o mesmo comando solto, num grupo de sessão próprio, e guarda o pid para desmontar depois. *(assistente)*
 - **Lixeira:** especificação freedesktop (`~/.local/share/Trash` e `.Trash-<uid>` em cada disco).
 - **Miniaturas:** especificação freedesktop (`~/.cache/thumbnails/…`, PNG com `Thumb::URI` e `Thumb::MTime`), compartilhadas com qualquer app e com o shell.
 - **Abrir com / padrões:** `mimeapps.list` lido e escrito pela especificação.
 - **Recentes e favoritos:** `recently-used.xbel` e os favoritos do GTK (`~/.config/gtk-3.0/bookmarks`, só o formato de texto, sem GTK). *(assistente)*
+
+## Uso sem o Lucerna **(usuário: princípio; detalhes: assistente)**
+
+O explorador se instala e funciona sozinho, em qualquer distribuição e ambiente (KDE, GNOME, Hyprland sem o shell, outro compositor Wayland), com ou sem systemd. O pacote não depende do shell nem do `lucernad`; o `lucerna-sdk` entra só como biblioteca, na compilação. A integração com o shell liga quando ele está presente e some em silêncio quando não está: nada falha, trava ou espera por causa da ausência de uma peça do Lucerna.
+
+| Sem… | O que continua igual | O que muda |
+|---|---|---|
+| **o shell** (`lucerna-shell`) | Navegação, operações, fila, diário, desfazer, busca, TUI, GUI, CLI, portal e `FileManager1`. | **Tema:** a GUI usa o tema padrão embutido (Catppuccin Mocha); a TUI usa a paleta do terminal, e `tema = "lucerna"` cai no mesmo padrão embutido. **Progresso:** o `progress.set` vira nada, sem erro e sem espera; o progresso fica na fila da TUI/GUI e o fim é avisado pela notificação do sistema (`org.freedesktop.Notifications`, que o KDE e o GNOME atendem). **Abrir na TUI:** abre o terminal configurado, sem o `tui.open`. **Some:** "definir como papel de parede", a busca do launcher e o arrastar para os painéis (são do shell). |
+| **o `lucernad`** | Montar, desmontar e ejetar pelo próprio explorador (cliente udisks2 no núcleo); copiar e colar arquivos (a área de transferência é a do sistema). | Sem o aviso de pendrive e sem o histórico da área de transferência, que são do `lucernad`. |
+| **o Hyprland** | Tudo: nada no explorador fala com o Hyprland. A GUI é Qt Quick comum no Wayland; o X11 não é testado, mas nada o recusa. | Fora do Hyprland, o `portals.conf` sugerido não se aplica: o KDE e o GNOME já têm o próprio seletor de arquivos, e o do explorador só é usado se o usuário o escolher no `portals.conf`. |
+| **o systemd** | O serviço, a fila, a retomada e as montagens. | **Serviço:** sem ativação por socket, o cliente sobe o `lucerna-files serve` sozinho (passo 2 de "Cliente sem o serviço rodando"); depois de uma queda, quem o sobe de novo é o próximo cliente, não o `Restart=on-failure`. **Rede e nuvem:** sem `systemd-run --user`, o serviço roda o `rclone`/`sshfs`/`mount.cifs` solto, num grupo de sessão próprio. |
+
+Outras ausências *(assistente)*:
+
+- **Sem udisks2:** montar, desmontar e ejetar somem com uma explicação; o resto segue.
+- **Sem D-Bus de sessão:** cada `lucerna-files-gui` vira um processo próprio (sem instância única, sem portal e sem `FileManager1`).
+- **`FileManager1` no KDE e no GNOME:** a GUI pede o nome sem tomá-lo de quem já tem; com o Dolphin ou o Nautilus registrado, ela segue sem ele, em silêncio. O arquivo de ativação do `FileManager1` no D-Bus é opcional no pacote, para não disputar com o gerenciador do ambiente.
+- **Testes:** o CI roda a TUI, a CLI e o serviço sem shell, sem `lucernad` e sem systemd (o `shell.sock` falso só entra nos testes da integração).
 
 ## Padrão de GUI do ecossistema **(usuário: padronizar; desenho: assistente)**
 
@@ -371,7 +391,7 @@ Origem: **U** = decisão do usuário (inspirações e integração); **P** = pro
 - **`org.freedesktop.FileManager1`**: o "mostrar na pasta" dos outros apps abre o explorador — N.
 - **Arrastar e soltar** entre o explorador, os outros apps e os painéis do shell — P.
 - **Miniaturas compartilhadas** com o shell (seletor de papel de parede, launcher) — P.
-- **"Definir como papel de parede"** no menu de imagens e vídeos, pelo IPC do shell — N.
+- **"Definir como papel de parede"** no menu de imagens e vídeos, pelo IPC do shell; sem o shell, a ação não aparece — N.
 - **Abrir a pasta da TUI na GUI e vice-versa**; configuração e atalhos compartilhados — P.
 
 ### Qualidade
