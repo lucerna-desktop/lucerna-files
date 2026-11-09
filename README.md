@@ -16,6 +16,7 @@ Veja a pasta [`docs/`](docs/):
 
 - [`docs/proposta.md`](docs/proposta.md)
 - [`docs/superpowers/specs/2026-10-27-explorador-design.md`](docs/superpowers/specs/2026-10-27-explorador-design.md)
+- [`docs/gui-rascunho.md`](docs/gui-rascunho.md): rascunho da GUI e o que falta mudar nele
 
 O que falta fazer está em [`lucerna-files — Pendências.md`](<lucerna-files — Pendências.md>).
 
