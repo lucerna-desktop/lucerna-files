@@ -16,6 +16,7 @@ Veja a pasta [`docs/`](docs/):
 
 - [`docs/proposta.md`](docs/proposta.md)
 - [`docs/superpowers/specs/2026-10-27-explorador-design.md`](docs/superpowers/specs/2026-10-27-explorador-design.md)
+- [`docs/design/`](docs/design/): protótipo da tela principal da GUI em HTML e CSS, com os 12 temas
 
 O que falta fazer está em [`lucerna-files — Pendências.md`](<lucerna-files — Pendências.md>).
 

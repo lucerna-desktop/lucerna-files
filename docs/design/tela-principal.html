@@ -1,0 +1,906 @@
+<!doctype html>
+<!--
+  Lucerna Files — Tela principal (rascunho v3, réplica em HTML/CSS)
+
+  Notas do desenho (substitui o "quadro de notas" do Figma):
+  - Fontes: texto em Rubik (400/500/600); mono em JetBrains Mono 400 (KeyHints Ctrl/K/F).
+    Antes a mono era Cascadia Code. Tamanhos: small 11, normal 13, large 16, huge 44.
+  - Tokens renomeados para o esquema novo, expostos como CSS custom properties:
+    --colors-* (base, surface, raised, track, border, accent, accentText, text, textMuted,
+    textFaint, warning, danger, success), --derived-* (accentContainer, warningContainer,
+    backdrop por tema; folder, folderGlyph, page, pageFold, hover, pressed calculados no :root
+    via color-mix — accent puro fica para seleção, foco, aba ativa e progresso), --spacing-* (tiny 4, small 8, normal 12, large 20),
+    --radius-* (small 8, normal 14, large 22), --font-size-*, --font-sans, --font-mono.
+  - Troca de tema pelos aliases: o atributo data-theme no <html> aponta para um dos 12
+    blocos [data-theme="..."] (equivalente às 12 coleções/"Variables Swap" do Figma).
+    Componentes só leem tokens; nenhuma cor literal fora dos blocos de tema.
+    Seleção: seletor flutuante no canto do fundo, ?tema=<slug> na URL, persistida em
+    localStorage. ?grade=1 mostra os 12 temas lado a lado; ?embed=1 esconde o seletor.
+-->
+<html lang="pt-BR" data-theme="catppuccin-mocha">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucerna Files — Tela principal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  (function () {
+    var temas = ["catppuccin-mocha","catppuccin-latte","tokyo-night","gruvbox-dark","rose-pine","rose-pine-dawn","nord","everforest","kanagawa","dracula","matte-black","decay-green"];
+    var p = new URLSearchParams(location.search);
+    var t = p.get("tema");
+    if (t && temas.indexOf(t) < 0) { t = temas.find(function (x) { return x.indexOf(t) === 0; }) || null; }
+    if (!t) { try { t = localStorage.getItem("lucerna-tema"); } catch (e) {} }
+    if (!t || temas.indexOf(t) < 0) t = "catppuccin-mocha";
+    document.documentElement.setAttribute("data-theme", t);
+    if (p.get("embed") === "1") document.documentElement.classList.add("embed");
+    if (p.get("grade") === "1") document.documentElement.classList.add("grade");
+    window.__TEMAS = temas;
+  })();
+</script>
+<style>
+/* ---------- Tokens fixos ---------- */
+:root {
+  --spacing-tiny: 4px;
+  --spacing-small: 8px;
+  --spacing-normal: 12px;
+  --spacing-large: 20px;
+  --radius-small: 8px;
+  --radius-normal: 14px;
+  --radius-large: 22px;
+  --radius-pill: 999px;
+  --font-size-small: 11px;
+  --font-size-normal: 13px;
+  --font-size-large: 16px;
+  --font-size-huge: 44px;
+  --font-sans: "Rubik", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Derivados comuns a todos os temas (calculados sobre os aliases do tema ativo) */
+  --derived-folder: color-mix(in srgb, var(--colors-accent) 45%, var(--colors-raised));
+  --derived-folderGlyph: color-mix(in srgb, var(--colors-accentText) 50%, var(--derived-folder));
+  --derived-page: color-mix(in srgb, var(--colors-raised) 82%, var(--colors-text));
+  --derived-pageFold: color-mix(in srgb, var(--colors-raised) 55%, var(--colors-text));
+  --derived-hover: color-mix(in srgb, var(--colors-text) 7%, transparent);
+  --derived-pressed: color-mix(in srgb, var(--colors-text) 12%, transparent);
+  /* Moldura da janela no fundo: margem proporcional, teto em telas grandes */
+  --window-gap: clamp(calc(var(--spacing-large) * 2), 3vmin, calc(var(--spacing-large) * 4));
+  --window-max-w: 2000px;
+  --window-max-h: 1240px;
+}
+
+/* ---------- Temas (aliases de cor) ---------- */
+:root, [data-theme="catppuccin-mocha"] {
+  --colors-base: #1e1e2e;
+  --colors-surface: #313244;
+  --colors-raised: #45475a;
+  --colors-border: #585b70;
+  --colors-text: #cdd6f4;
+  --colors-textMuted: #bac2de;
+  --colors-textFaint: #7f849c;
+  --colors-accent: #89b4fa;
+  --colors-accentText: #11111b;
+  --colors-danger: #f38ba8;
+  --colors-success: #a6e3a1;
+  --colors-warning: #f9e2af;
+  --colors-track: #45475a;
+  --derived-accentContainer: #3c4867;
+  --derived-warningContainer: #454145;
+  --derived-backdrop: #292d42;
+  color-scheme: dark;
+}
+[data-theme="catppuccin-latte"] {
+  --colors-base: #eff1f5;
+  --colors-surface: #e6e9ef;
+  --colors-raised: #dce0e8;
+  --colors-border: #bcc0cc;
+  --colors-text: #4c4f69;
+  --colors-textMuted: #5c5f77;
+  --colors-textFaint: #8c8fa1;
+  --colors-accent: #1e66f5;
+  --colors-accentText: #eff1f5;
+  --colors-danger: #d20f39;
+  --colors-success: #40a02b;
+  --colors-warning: #df8e1d;
+  --colors-track: #ccd0da;
+  --derived-accentContainer: #b4caf5;
+  --derived-warningContainer: #ecdfce;
+  --derived-backdrop: #dae3f5;
+  color-scheme: light;
+}
+[data-theme="tokyo-night"] {
+  --colors-base: #1a1b26;
+  --colors-surface: #24283b;
+  --colors-raised: #2f3549;
+  --colors-border: #414868;
+  --colors-text: #c0caf5;
+  --colors-textMuted: #a9b1d6;
+  --colors-textFaint: #565f89;
+  --colors-accent: #7aa2f7;
+  --colors-accentText: #16161e;
+  --colors-danger: #f7768e;
+  --colors-success: #9ece6a;
+  --colors-warning: #e0af68;
+  --colors-track: #3b4261;
+  --derived-accentContainer: #354161;
+  --derived-warningContainer: #3e3632;
+  --derived-backdrop: #24283b;
+  color-scheme: dark;
+}
+[data-theme="gruvbox-dark"] {
+  --colors-base: #282828;
+  --colors-surface: #3c3836;
+  --colors-raised: #504945;
+  --colors-border: #665c54;
+  --colors-text: #ebdbb2;
+  --colors-textMuted: #d5c4a1;
+  --colors-textFaint: #928374;
+  --colors-accent: #fe8019;
+  --colors-accentText: #1d2021;
+  --colors-danger: #fb4934;
+  --colors-success: #b8bb26;
+  --colors-warning: #fabd2f;
+  --colors-track: #504945;
+  --derived-accentContainer: #644124;
+  --derived-warningContainer: #4e4329;
+  --derived-backdrop: #3d3127;
+  color-scheme: dark;
+}
+[data-theme="rose-pine"] {
+  --colors-base: #191724;
+  --colors-surface: #1f1d2e;
+  --colors-raised: #26233a;
+  --colors-border: #403d52;
+  --colors-text: #e0def4;
+  --colors-textMuted: #908caa;
+  --colors-textFaint: #6e6a86;
+  --colors-accent: #c4a7e7;
+  --colors-accentText: #191724;
+  --colors-danger: #eb6f92;
+  --colors-success: #9ccfd8;
+  --colors-warning: #f6c177;
+  --colors-track: #403d52;
+  --derived-accentContainer: #493f5b;
+  --derived-warningContainer: #413633;
+  --derived-backdrop: #2a2538;
+  color-scheme: dark;
+}
+[data-theme="rose-pine-dawn"] {
+  --colors-base: #faf4ed;
+  --colors-surface: #fffaf3;
+  --colors-raised: #f2e9e1;
+  --colors-border: #cecacd;
+  --colors-text: #575279;
+  --colors-textMuted: #797593;
+  --colors-textFaint: #9893a5;
+  --colors-accent: #907aa9;
+  --colors-accentText: #faf4ed;
+  --colors-danger: #b4637a;
+  --colors-success: #286983;
+  --colors-warning: #ea9d34;
+  --colors-track: #dfdad9;
+  --derived-accentContainer: #dcd2da;
+  --derived-warningContainer: #f7e4cc;
+  --derived-backdrop: #efe8e6;
+  color-scheme: light;
+}
+[data-theme="nord"] {
+  --colors-base: #2e3440;
+  --colors-surface: #3b4252;
+  --colors-raised: #434c5e;
+  --colors-border: #4c566a;
+  --colors-text: #eceff4;
+  --colors-textMuted: #d8dee9;
+  --colors-textFaint: #7b88a1;
+  --colors-accent: #88c0d0;
+  --colors-accentText: #2e3440;
+  --colors-danger: #bf616a;
+  --colors-success: #a3be8c;
+  --colors-warning: #ebcb8b;
+  --colors-track: #4c566a;
+  --derived-accentContainer: #475b68;
+  --derived-warningContainer: #504f4d;
+  --derived-backdrop: #37424e;
+  color-scheme: dark;
+}
+[data-theme="everforest"] {
+  --colors-base: #2d353b;
+  --colors-surface: #343f44;
+  --colors-raised: #3d484d;
+  --colors-border: #4f585e;
+  --colors-text: #d3c6aa;
+  --colors-textMuted: #9da9a0;
+  --colors-textFaint: #7a8478;
+  --colors-accent: #a7c080;
+  --colors-accentText: #232a2e;
+  --colors-danger: #e67e80;
+  --colors-success: #83c092;
+  --colors-warning: #dbbc7f;
+  --colors-track: #475258;
+  --derived-accentContainer: #4f5c4e;
+  --derived-warningContainer: #4c4d47;
+  --derived-backdrop: #394342;
+  color-scheme: dark;
+}
+[data-theme="kanagawa"] {
+  --colors-base: #1f1f28;
+  --colors-surface: #2a2a37;
+  --colors-raised: #363646;
+  --colors-border: #54546d;
+  --colors-text: #dcd7ba;
+  --colors-textMuted: #c8c093;
+  --colors-textFaint: #727169;
+  --colors-accent: #7e9cd8;
+  --colors-accentText: #16161d;
+  --colors-danger: #e46876;
+  --colors-success: #98bb6c;
+  --colors-warning: #e6c384;
+  --colors-track: #363646;
+  --derived-accentContainer: #3a4259;
+  --derived-warningContainer: #433d39;
+  --derived-backdrop: #282c3a;
+  color-scheme: dark;
+}
+[data-theme="dracula"] {
+  --colors-base: #282a36;
+  --colors-surface: #343746;
+  --colors-raised: #44475a;
+  --colors-border: #6272a4;
+  --colors-text: #f8f8f2;
+  --colors-textMuted: #d6d6e0;
+  --colors-textFaint: #6272a4;
+  --colors-accent: #bd93f9;
+  --colors-accentText: #21222c;
+  --colors-danger: #ff5555;
+  --colors-success: #50fa7b;
+  --colors-warning: #f1fa8c;
+  --colors-track: #44475a;
+  --derived-accentContainer: #52476d;
+  --derived-warningContainer: #4c4f45;
+  --derived-backdrop: #37354a;
+  color-scheme: dark;
+}
+[data-theme="matte-black"] {
+  --colors-base: #0f0f0f;
+  --colors-surface: #1a1a1a;
+  --colors-raised: #242424;
+  --colors-border: #333333;
+  --colors-text: #e6e6e6;
+  --colors-textMuted: #a8a8a8;
+  --colors-textFaint: #6e6e6e;
+  --colors-accent: #d0d0d0;
+  --colors-accentText: #0f0f0f;
+  --colors-danger: #cf6a6a;
+  --colors-success: #9db38e;
+  --colors-warning: #d6b56d;
+  --colors-track: #2e2e2e;
+  --derived-accentContainer: #454545;
+  --derived-warningContainer: #332d20;
+  --derived-backdrop: #222222;
+  color-scheme: dark;
+}
+[data-theme="decay-green"] {
+  --colors-base: #0c1210;
+  --colors-surface: #131b18;
+  --colors-raised: #1a2521;
+  --colors-border: #27372f;
+  --colors-text: #c6dccf;
+  --colors-textMuted: #8fae9c;
+  --colors-textFaint: #5c7a69;
+  --colors-accent: #78dba9;
+  --colors-accentText: #08100c;
+  --colors-danger: #e05f65;
+  --colors-success: #78dba9;
+  --colors-warning: #f1cf8a;
+  --colors-track: #22322b;
+  --derived-accentContainer: #2a4a3b;
+  --derived-warningContainer: #353426;
+  --derived-backdrop: #17261f;
+  color-scheme: dark;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--derived-backdrop);
+  color: var(--colors-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-align: inherit; }
+svg.lucide { width: 16px; height: 16px; stroke-width: 1.75; flex: none; }
+.muted { color: var(--colors-textMuted); }
+.faint { color: var(--colors-textFaint); }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--colors-accent); outline-offset: 2px; }
+
+/* ---------- Janela ---------- */
+/* Centralizada no fundo com margem (--window-gap) e teto de tamanho: em telas grandes
+   cresce até --window-max-*, sobrando backdrop em volta; o seletor de tema mora na faixa
+   inferior do fundo, que é sempre ≥ 40px, então nunca encosta na janela. */
+.window {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(calc(100vw - 2 * var(--window-gap)), var(--window-max-w));
+  height: min(calc(100vh - 2 * var(--window-gap)), var(--window-max-h));
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr) 320px;
+  grid-template-rows: 44px 60px minmax(0, 1fr);
+  background: var(--colors-base);
+  border: 1px solid var(--colors-border);
+  border-radius: var(--radius-normal);
+  overflow: hidden;
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--colors-base) 70%, transparent);
+  z-index: 1;
+}
+
+/* ---------- Barra de abas ---------- */
+.tabbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-small);
+  padding: 0 var(--spacing-normal) 0 var(--spacing-large);
+  background: var(--colors-base);
+  min-width: 0;
+}
+.app-label, .tab {
+  display: flex; align-items: center; gap: var(--spacing-small);
+  height: 37px; font-weight: 500;
+}
+.app-label { padding-right: var(--spacing-small); flex: none; }
+.app-label svg.lucide { fill: var(--colors-accent); stroke: var(--colors-accent); }
+.tab .ico-folder { fill: var(--derived-folder); stroke: var(--derived-folder); }
+.tab {
+  width: 220px; min-width: 120px; flex: 0 1 220px;
+  padding: 0 var(--spacing-normal);
+  border-radius: var(--radius-normal) var(--radius-normal) 0 0;
+  color: var(--colors-textMuted);
+  font-weight: 400;
+  cursor: default;
+}
+.tab:hover { background: var(--derived-hover); color: var(--colors-text); }
+.tab:focus-visible { outline-offset: -2px; }
+.tab .tab-title { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tab-close { width: 22px; height: 22px; display: grid; place-items: center; border-radius: var(--radius-small); }
+.tab-close svg.lucide { width: 14px; height: 14px; color: var(--colors-textFaint); }
+.tab-close:hover { background: var(--derived-pressed); }
+.tab-close:hover svg.lucide { color: var(--colors-text); }
+.tab.active { background: var(--colors-surface); color: var(--colors-text); font-weight: 500; }
+.tab.active .ico-folder { fill: var(--colors-accent); stroke: var(--colors-accent); }
+.tab.active .tab-close svg.lucide { color: var(--colors-textMuted); }
+.tab-add { height: 30px; width: 30px; margin-bottom: 2px; display: grid; place-items: center; color: var(--colors-textMuted); border-radius: var(--radius-small); flex: none; }
+.tab-add svg.lucide { width: 18px; height: 18px; }
+.tab-add:hover { background: var(--derived-hover); color: var(--colors-text); }
+.tabbar .spacer { flex: 1; }
+.cmd {
+  align-self: center; flex: none;
+  display: flex; align-items: center; gap: var(--spacing-small);
+  height: 34px; padding: 0 var(--spacing-small) 0 var(--spacing-normal);
+  border: 1px solid var(--colors-border); border-radius: var(--radius-small);
+  background: var(--colors-surface); color: var(--colors-textMuted);
+}
+.cmd:hover { background: var(--colors-raised); color: var(--colors-text); }
+.cmd .label { color: var(--colors-text); margin-right: var(--spacing-tiny); }
+.keys { display: flex; gap: var(--spacing-tiny); }
+.kbd {
+  font-family: var(--font-mono); font-size: var(--font-size-small);
+  color: var(--colors-textMuted);
+  background: var(--colors-raised);
+  border: 1px solid var(--colors-border);
+  border-radius: 5px;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  display: inline-grid; place-items: center; line-height: 1;
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: var(--spacing-small);
+  padding: 0 var(--spacing-normal) 0 var(--spacing-normal);
+  background: var(--colors-surface);
+  border-bottom: 1px solid var(--colors-border);
+  min-width: 0;
+}
+.icon-btn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: var(--radius-small); color: var(--colors-textMuted);
+}
+.icon-btn svg.lucide { width: 18px; height: 18px; }
+.icon-btn:not(:disabled):hover { background: var(--derived-hover); color: var(--colors-text); }
+.icon-btn:not(:disabled):active { background: var(--derived-pressed); }
+.icon-btn:disabled { color: var(--colors-textFaint); opacity: .6; cursor: default; }
+.nav-btns { display: flex; gap: var(--spacing-small); margin-right: var(--spacing-tiny); flex: none; }
+.field {
+  display: flex; align-items: center; gap: var(--spacing-small);
+  height: 36px; padding: 0 var(--spacing-normal);
+  background: var(--colors-base);
+  border: 1px solid var(--colors-border);
+  border-radius: var(--radius-small);
+  min-width: 0;
+}
+.field:hover { border-color: var(--colors-textFaint); }
+.field:focus-within { border-color: var(--colors-accent); }
+/* Tela larga: o caminho para de crescer cedo, a busca ganha espaço; a sobra vai para o vão entre os dois */
+.crumbs { flex: 3 1 0; max-width: 760px; font-size: var(--font-size-normal); }
+.crumbs .sep svg { width: 14px; height: 14px; color: var(--colors-textFaint); }
+.crumbs .cur { font-weight: 600; }
+.crumbs .home { color: var(--colors-textMuted); display: flex; align-items: center; gap: var(--spacing-small); }
+.search { flex: 2 1 0; min-width: 240px; max-width: 680px; margin-left: auto; color: var(--colors-textMuted); }
+.search .ph { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.segmented {
+  display: flex; gap: var(--spacing-tiny); padding: 2px; flex: none;
+  background: var(--colors-base);
+  border: 1px solid var(--colors-border);
+  border-radius: var(--radius-small);
+}
+.view-tools { display: flex; gap: var(--spacing-small); margin-left: var(--spacing-tiny); flex: none; }
+.segmented .icon-btn { width: 34px; height: 30px; border-radius: 6px; }
+.segmented .on, .segmented [aria-pressed="true"] { background: var(--derived-accentContainer); color: var(--colors-accent); }
+.segmented .on:hover, .segmented [aria-pressed="true"]:hover { background: var(--derived-accentContainer); color: var(--colors-accent); }
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  display: flex; flex-direction: column;
+  padding: var(--spacing-normal) var(--spacing-normal);
+  background: var(--colors-surface);
+  border-right: 1px solid var(--colors-border);
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--colors-border) transparent;
+}
+.sec-title {
+  font-size: var(--font-size-small); font-weight: 600;
+  color: var(--colors-textMuted);
+  padding: var(--spacing-tiny) var(--spacing-normal) var(--spacing-tiny);
+  margin-top: var(--spacing-normal);
+}
+.sec-title:first-child { margin-top: 0; }
+.nav-item {
+  display: flex; align-items: center; gap: var(--spacing-normal);
+  flex: 0 1 40px; min-height: 32px; width: 100%; padding: 0 var(--spacing-normal);
+  border-radius: var(--radius-small);
+  color: var(--colors-textMuted);
+  margin-bottom: 2px;
+}
+.nav-item svg.lucide { width: 18px; height: 18px; }
+.nav-item:hover { background: var(--derived-hover); color: var(--colors-text); }
+.nav-item:focus-visible { outline-offset: -2px; }
+.nav-item.active { background: var(--derived-accentContainer); color: var(--colors-text); font-weight: 500; }
+.nav-item.active svg.lucide { color: var(--colors-text); }
+.disk { padding: var(--spacing-normal) var(--spacing-normal) 0; }
+.disk .row { display: flex; align-items: center; gap: var(--spacing-normal); }
+.disk .row > div { flex: 1; }
+.disk .name { color: var(--colors-text); }
+.disk .free { font-size: var(--font-size-small); color: var(--colors-textMuted); margin-top: 2px; }
+.disk svg.lucide, .disk .eject { width: 18px; height: 18px; color: var(--colors-textMuted); }
+.bar { height: 4px; border-radius: var(--radius-pill); background: var(--colors-track); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--colors-accent); border-radius: inherit; }
+.disk .bar { margin-top: var(--spacing-normal); }
+
+/* ---------- Área central ---------- */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--colors-base); }
+.main-head {
+  display: flex; align-items: center; gap: var(--spacing-small);
+  padding: var(--spacing-normal) var(--spacing-large) 0;
+}
+.pill {
+  display: flex; align-items: center; gap: var(--spacing-small);
+  height: 32px; padding: 0 var(--spacing-normal);
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  border-radius: var(--radius-small);
+  color: var(--colors-textMuted);
+}
+button.pill:hover { background: var(--colors-raised); border-color: var(--colors-textFaint); color: var(--colors-text); }
+button.pill:active { background: var(--derived-pressed); }
+.pill.round { border-radius: var(--radius-pill); }
+.pill .lbl { color: var(--colors-textFaint); }
+.pill b { color: var(--colors-text); font-weight: 600; }
+.pill .strong { color: var(--colors-text); font-weight: 500; }
+.pill svg.lucide { width: 16px; height: 16px; }
+.main-head .spacer { flex: 1; }
+.grid {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 140px);
+  grid-auto-rows: 150px;
+  gap: var(--spacing-normal);
+  padding: var(--spacing-large) var(--spacing-large);
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--colors-border) transparent;
+}
+.item {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: var(--spacing-normal) var(--spacing-small) 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  cursor: default;
+}
+.item:hover { background: var(--derived-hover); }
+.item:active { background: var(--derived-pressed); }
+.item .ico { height: 88px; width: 100%; display: grid; place-items: center; position: relative; }
+.item .name { margin-top: var(--spacing-small); text-align: center; }
+.item.selected {
+  background: var(--derived-accentContainer);
+  border-color: var(--colors-accent);
+  box-shadow: 0 0 0 1px var(--colors-accent);
+}
+.item.selected .name { color: var(--colors-text); font-weight: 500; }
+.item.selected:focus-visible { outline-offset: 3px; }
+.check {
+  position: absolute; top: var(--spacing-small); right: var(--spacing-small);
+  width: 18px; height: 18px; border-radius: 5px;
+  background: var(--colors-accent); color: var(--colors-accentText);
+  display: grid; place-items: center; z-index: 1;
+}
+.check svg.lucide { width: 13px; height: 13px; stroke-width: 3; }
+.folder { width: 74px; height: 60px; }
+.folder-glyph { position: absolute; top: 42px; left: 50%; transform: translateX(-50%); color: var(--derived-folderGlyph); }
+.folder-glyph svg.lucide { width: 22px; height: 22px; stroke-width: 2.25; }
+/* Arquivos: página contrastada + acento discreto por tipo (dobra, faixa e glifo em --kind) */
+.k-pdf { --kind: var(--colors-danger); }
+.k-json { --kind: var(--colors-warning); }
+.k-md { --kind: var(--colors-success); }
+.page { width: 60px; height: 74px; }
+.page-glyph { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); color: var(--kind, var(--colors-textMuted)); }
+.page-glyph svg.lucide { width: 26px; height: 26px; stroke-width: 2; }
+.pdf-tag {
+  position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
+  padding: 2px var(--spacing-tiny); border-radius: 2px;
+  background: var(--kind); color: var(--colors-base);
+  font-size: var(--font-size-small); font-weight: 600; letter-spacing: .5px; line-height: 1.2;
+}
+.thumb { width: 90px; height: 88px; border-radius: var(--radius-small); overflow: hidden; }
+.thumb svg, .preview svg { width: 100%; height: 100%; display: block; }
+
+.statusbar {
+  display: flex; align-items: center; gap: var(--spacing-small); flex: none;
+  height: 50px; padding: 0 var(--spacing-normal) 0 var(--spacing-large);
+  border-top: 1px solid var(--colors-border);
+  background: var(--colors-base);
+}
+.statusbar .sel { font-weight: 500; }
+.statusbar .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--colors-textFaint); margin: 0 var(--spacing-small); }
+.statusbar .spacer { flex: 1; }
+.ops {
+  width: 342px; height: 34px; gap: var(--spacing-normal);
+  border-radius: var(--radius-small);
+}
+.ops svg.lucide { color: var(--colors-accent); }
+.ops .bar { flex: 1; height: 5px; }
+.ops .pct { font-variant-numeric: tabular-nums; }
+
+/* ---------- Painel de detalhes ---------- */
+.details {
+  display: flex; flex-direction: column;
+  padding: var(--spacing-normal) var(--spacing-large) var(--spacing-large);
+  background: var(--colors-surface);
+  border-left: 1px solid var(--colors-border);
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--colors-border) transparent;
+}
+.preview { height: 210px; flex: none; border-radius: var(--radius-normal); overflow: hidden; margin-top: var(--spacing-tiny); }
+.d-name { font-size: var(--font-size-large); font-weight: 600; margin-top: var(--spacing-large); }
+.d-kind { display: flex; align-items: center; gap: var(--spacing-small); color: var(--colors-textMuted); margin-top: var(--spacing-tiny); }
+.d-kind svg.lucide { width: 16px; height: 16px; }
+.hr { height: 1px; flex: none; background: var(--colors-border); margin: var(--spacing-normal) 0; }
+.props { display: grid; grid-template-columns: auto 1fr; row-gap: 5px; column-gap: var(--spacing-normal); padding: var(--spacing-tiny) 0; }
+.props dt { color: var(--colors-textFaint); }
+.props dd { color: var(--colors-text); text-align: right; font-weight: 500; }
+.tags-head { display: flex; align-items: center; gap: var(--spacing-small); margin-top: var(--spacing-tiny); }
+.tags-head .lbl { color: var(--colors-textFaint); font-weight: 500; }
+.chips { display: flex; gap: var(--spacing-tiny); margin-top: var(--spacing-normal); }
+.chip {
+  font-size: var(--font-size-small); font-weight: 500; color: var(--colors-textMuted);
+  background: var(--colors-raised); border-radius: var(--radius-pill);
+  padding: var(--spacing-tiny) var(--spacing-normal);
+}
+.actions { display: flex; flex-direction: column; gap: var(--spacing-small); margin-top: var(--spacing-large); }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: var(--spacing-small);
+  height: 38px; width: 100%; flex: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  font-weight: 500;
+}
+.btn.primary { background: var(--colors-accent); border-color: var(--colors-accent); color: var(--colors-accentText); }
+.btn.primary:hover { background: color-mix(in srgb, var(--colors-accent) 88%, var(--colors-text)); }
+.btn.primary:active { background: color-mix(in srgb, var(--colors-accent) 80%, var(--colors-base)); }
+.btn.ghost { height: 32px; color: var(--colors-textMuted); font-weight: 400; }
+.btn.ghost:hover { background: var(--derived-hover); color: var(--colors-text); }
+.btn.ghost:active { background: var(--derived-pressed); }
+
+/* ---------- Seletor de tema (fora da janela, na faixa inferior do fundo) ---------- */
+.theme-picker {
+  position: fixed; right: var(--spacing-normal);
+  bottom: calc((var(--window-gap) - 22px) / 2);
+  display: flex; align-items: center; gap: var(--spacing-small);
+  height: 22px;
+  font-size: var(--font-size-small); color: var(--colors-textFaint);
+  opacity: .55; transition: opacity .15s;
+  z-index: 0;
+}
+.theme-picker:hover, .theme-picker:focus-within { opacity: 1; }
+.theme-picker select {
+  font: inherit; color: var(--colors-textMuted);
+  background: var(--colors-surface); border: 1px solid var(--colors-border);
+  border-radius: 6px; padding: 2px var(--spacing-tiny);
+}
+.theme-picker a { color: var(--colors-textMuted); }
+.embed .theme-picker { display: none; }
+
+/* ---------- Grade de temas (?grade=1) ---------- */
+.gallery { display: none; }
+.grade body { overflow: auto; }
+.grade .window, .grade .theme-picker { display: none; }
+.grade .gallery {
+  display: grid; grid-template-columns: repeat(auto-fill, 380px); justify-content: center;
+  gap: var(--spacing-large); padding: var(--spacing-large);
+}
+.gallery figure { display: flex; flex-direction: column; gap: var(--spacing-small); }
+.gallery figcaption { font-size: var(--font-size-small); color: var(--colors-textMuted); }
+.gallery figcaption a { color: inherit; }
+.gallery .frame { width: 380px; height: 245px; overflow: hidden; border-radius: var(--radius-small); border: 1px solid var(--colors-border); }
+.gallery iframe { width: 1520px; height: 980px; border: 0; transform: scale(.25); transform-origin: 0 0; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!-- Ilustração do wallpaper (castelo sob a lua), reutilizada na miniatura e no preview -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="wp-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color: var(--derived-accentContainer)"/>
+      <stop offset=".55" style="stop-color: color-mix(in srgb, var(--colors-accent) 45%, var(--colors-base))"/>
+      <stop offset="1" style="stop-color: color-mix(in srgb, var(--colors-accent) 25%, var(--colors-base))"/>
+    </linearGradient>
+    <radialGradient id="wp-glow" cx=".76" cy=".3" r=".45">
+      <stop offset="0" style="stop-color: var(--colors-text); stop-opacity: .45"/>
+      <stop offset="1" style="stop-color: var(--colors-text); stop-opacity: 0"/>
+    </radialGradient>
+    <radialGradient id="wp-moon" cx=".4" cy=".4" r=".7">
+      <stop offset="0" style="stop-color: var(--colors-text)"/>
+      <stop offset="1" style="stop-color: color-mix(in srgb, var(--colors-text) 70%, var(--colors-accent))"/>
+    </radialGradient>
+    <symbol id="wallpaper" viewBox="0 0 280 210" preserveAspectRatio="xMidYMid slice">
+      <rect width="280" height="210" fill="url(#wp-sky)"/>
+      <rect width="280" height="210" fill="url(#wp-glow)"/>
+      <g style="fill: var(--colors-text); opacity: .7">
+        <circle cx="30" cy="22" r=".9"/><circle cx="70" cy="48" r=".7"/><circle cx="120" cy="18" r="1"/>
+        <circle cx="160" cy="40" r=".7"/><circle cx="250" cy="20" r=".8"/><circle cx="18" cy="70" r=".6"/>
+        <circle cx="96" cy="80" r=".6"/><circle cx="265" cy="95" r=".7"/>
+      </g>
+      <circle cx="214" cy="76" r="24" fill="url(#wp-moon)"/>
+      <g style="fill: var(--colors-text); opacity: .12">
+        <circle cx="206" cy="70" r="5"/><circle cx="222" cy="84" r="3.5"/><circle cx="218" cy="64" r="2.5"/>
+      </g>
+      <!-- montanhas ao fundo -->
+      <path d="M0 150 L40 128 L80 142 L120 120 L170 140 L220 124 L280 138 L280 210 L0 210Z"
+            style="fill: color-mix(in srgb, var(--colors-accent) 35%, var(--colors-base))"/>
+      <!-- castelo -->
+      <g style="fill: color-mix(in srgb, var(--colors-accent) 18%, var(--colors-base))">
+        <path d="M86 160 L86 120 L90 108 L94 120 L94 132 L104 132 L104 104 L109 86 L114 104 L114 120 L120 120
+                 L120 92 L126 70 L132 92 L132 112 L138 112 L138 60 L145 34 L152 60 L152 110 L158 110 L158 84
+                 L164 66 L170 84 L170 122 L178 122 L178 100 L183 88 L188 100 L188 134 L196 134 L196 116 L200 106
+                 L204 116 L204 160 Z"/>
+      </g>
+      <g style="fill: var(--colors-warning); opacity: .8">
+        <rect x="143" y="76" width="3" height="5" rx="1"/><rect x="125" y="100" width="2.5" height="4" rx="1"/>
+        <rect x="163" y="96" width="2.5" height="4" rx="1"/><rect x="108" y="112" width="2.5" height="4" rx="1"/>
+        <rect x="182" y="110" width="2.5" height="4" rx="1"/>
+      </g>
+      <!-- primeiro plano -->
+      <path d="M0 176 L20 166 L34 172 L46 158 L56 170 L74 162 L96 172 L130 164 L170 172 L200 160 L224 170
+               L240 156 L252 168 L268 160 L280 166 L280 210 L0 210 Z"
+            style="fill: var(--colors-base)"/>
+      <g style="fill: var(--colors-base)">
+        <path d="M14 172 L20 146 L26 172Z"/><path d="M28 170 L33 152 L38 170Z"/>
+        <path d="M244 166 L250 138 L256 166Z"/><path d="M258 168 L263 150 L268 168Z"/>
+      </g>
+      <g style="fill: var(--colors-accent); opacity: .7">
+        <circle cx="60" cy="186" r="1.4"/><circle cx="110" cy="190" r="1.2"/><circle cx="150" cy="184" r="1.5"/>
+        <circle cx="196" cy="192" r="1.2"/><circle cx="230" cy="186" r="1.4"/>
+      </g>
+    </symbol>
+    <symbol id="folder" viewBox="0 0 74 60">
+      <path style="fill: var(--derived-folder)" d="M0 7 Q0 1 6 1 L24 1 Q27 1 29 3.5 L33 8 L68 8 Q74 8 74 14 L74 54 Q74 60 68 60 L6 60 Q0 60 0 54 Z"/>
+    </symbol>
+    <symbol id="page" viewBox="0 0 60 74">
+      <path style="fill: var(--derived-page); stroke: color-mix(in srgb, var(--colors-border) 70%, var(--colors-text)); stroke-width: 1" d="M.5 6.5 Q.5 .5 6.5 .5 L42 .5 L59.5 18 L59.5 67.5 Q59.5 73.5 53.5 73.5 L6.5 73.5 Q.5 73.5 .5 67.5 Z"/>
+      <path style="fill: color-mix(in srgb, var(--kind, var(--colors-textFaint)) 45%, var(--derived-pageFold))" d="M42 .5 L59.5 18 L46 18 Q42 18 42 14 Z"/>
+      <path style="fill: var(--kind, var(--colors-textFaint))" d="M.5 64 L59.5 64 L59.5 67.5 Q59.5 73.5 53.5 73.5 L6.5 73.5 Q.5 73.5 .5 67.5 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="window" role="application" aria-label="Lucerna Files">
+
+  <!-- Barra de abas -->
+  <div class="tabbar" role="tablist" aria-label="Abas">
+    <div class="app-label"><i data-lucide="folder"></i>Lucerna Files</div>
+    <div class="tab active" role="tab" aria-selected="true" tabindex="0">
+      <i data-lucide="folder" class="ico-folder"></i><span class="tab-title">Projetos</span>
+      <button class="tab-close" aria-label="Fechar aba"><i data-lucide="x"></i></button>
+    </div>
+    <div class="tab" role="tab" aria-selected="false" tabindex="0">
+      <i data-lucide="download"></i><span class="tab-title">Downloads</span>
+      <button class="tab-close" aria-label="Fechar aba"><i data-lucide="x"></i></button>
+    </div>
+    <button class="tab-add" aria-label="Nova aba"><i data-lucide="plus"></i></button>
+    <div class="spacer"></div>
+    <button class="cmd"><i data-lucide="command"></i><span class="label">Comandos</span>
+      <span class="keys"><kbd class="kbd">Ctrl</kbd><kbd class="kbd">K</kbd></span></button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="nav-btns">
+      <button class="icon-btn" aria-label="Voltar"><i data-lucide="arrow-left"></i></button>
+      <button class="icon-btn" aria-label="Avançar" disabled><i data-lucide="arrow-right"></i></button>
+      <button class="icon-btn" aria-label="Acima"><i data-lucide="arrow-up"></i></button>
+    </div>
+    <nav class="field crumbs" aria-label="Caminho">
+      <span class="home"><i data-lucide="house"></i>Eduardo</span>
+      <span class="sep"><i data-lucide="chevron-right"></i></span>
+      <span class="cur">Projetos</span>
+    </nav>
+    <div class="field search">
+      <i data-lucide="search"></i><span class="ph">Pesquisar em Projetos…</span>
+      <span class="keys"><kbd class="kbd">Ctrl</kbd><kbd class="kbd">F</kbd></span>
+    </div>
+    <div class="view-tools">
+      <div class="segmented" role="group" aria-label="Visualização">
+        <button class="icon-btn on" aria-label="Grade" aria-pressed="true"><i data-lucide="layout-grid"></i></button>
+        <button class="icon-btn" aria-label="Lista" aria-pressed="false"><i data-lucide="table-properties"></i></button>
+        <button class="icon-btn" aria-label="Colunas" aria-pressed="false"><i data-lucide="columns-3"></i></button>
+      </div>
+      <div class="segmented" role="group" aria-label="Painéis">
+        <button class="icon-btn" aria-label="Painel de detalhes" aria-pressed="true"><i data-lucide="panel-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sec-title">Navegação</div>
+    <button class="nav-item"><i data-lucide="house"></i>Eduardo</button>
+    <button class="nav-item active" aria-current="page"><i data-lucide="folder"></i>Projetos</button>
+    <button class="nav-item"><i data-lucide="clock"></i>Recentes</button>
+    <button class="nav-item"><i data-lucide="star"></i>Favoritos</button>
+    <button class="nav-item"><i data-lucide="file-text"></i>Documentos</button>
+    <button class="nav-item"><i data-lucide="image"></i>Imagens</button>
+    <button class="nav-item"><i data-lucide="music"></i>Música</button>
+    <button class="nav-item"><i data-lucide="clapperboard"></i>Vídeos</button>
+    <button class="nav-item"><i data-lucide="download"></i>Downloads</button>
+    <button class="nav-item"><i data-lucide="trash-2"></i>Lixeira</button>
+    <div class="sec-title">Conexões</div>
+    <button class="nav-item"><i data-lucide="globe"></i>Rede</button>
+    <button class="nav-item"><i data-lucide="cloud"></i>Nuvem</button>
+    <div class="sec-title">Pesquisas salvas</div>
+    <button class="nav-item"><i data-lucide="search"></i>Trabalho</button>
+    <button class="nav-item"><i data-lucide="search"></i>Estudos</button>
+    <div class="sec-title">Discos</div>
+    <div class="disk">
+      <div class="row">
+        <i data-lucide="hard-drive"></i>
+        <div><div class="name">SSD do sistema</div><div class="free">120 GB livres de 512 GB</div></div>
+        <svg class="eject" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-label="Ejetar"><path d="M12 5 L19 14 H5 Z"/><path d="M5 19 H19"/></svg>
+      </div>
+      <div class="bar"><i style="width:77%"></i></div>
+    </div>
+  </aside>
+
+  <!-- Área central -->
+  <main class="main">
+    <div class="main-head">
+      <button class="pill"><i data-lucide="list-filter"></i><span class="lbl">Ordenar:</span> <b>Nome</b><i data-lucide="chevron-down"></i></button>
+      <div class="spacer"></div>
+      <button class="pill round" aria-pressed="false"><i data-lucide="eye"></i><span class="strong">Ocultos</span></button>
+      <button class="pill round"><i data-lucide="filter"></i><span class="strong">Filtrar</span><i data-lucide="chevron-down"></i></button>
+    </div>
+    <div class="grid" role="listbox" aria-label="Conteúdo de Projetos" aria-multiselectable="true">
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">Dev</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">Games</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">Lucerna Shell</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">MedAgenda</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">Minecraft</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">Portfolio</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg></div><div class="name">ReadLivra</div></div>
+      <div class="item" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="folder"><use href="#folder"/></svg><span class="folder-glyph"><i data-lucide="arrow-down-to-line"></i></span></div><div class="name">Downloads</div></div>
+      <div class="item k-pdf" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="page"><use href="#page"/></svg><span class="pdf-tag">PDF</span></div><div class="name">design.pdf</div></div>
+      <div class="item k-json" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="page"><use href="#page"/></svg><span class="page-glyph"><i data-lucide="braces"></i></span></div><div class="name">package.json</div></div>
+      <div class="item k-md" role="option" aria-selected="false" tabindex="0"><div class="ico"><svg class="page"><use href="#page"/></svg><span class="page-glyph"><i data-lucide="file-text"></i></span></div><div class="name">README.md</div></div>
+      <div class="item selected" role="option" aria-selected="true" tabindex="0">
+        <span class="check"><i data-lucide="check"></i></span>
+        <div class="ico"><div class="thumb"><svg><use href="#wallpaper"/></svg></div></div>
+        <div class="name">wallpaper.png</div>
+      </div>
+    </div>
+    <div class="statusbar">
+      <span class="sel">1 selecionado (2,4 MB)</span><span class="dot"></span><span class="muted">12 itens</span>
+      <span class="spacer"></span>
+      <div class="pill ops">
+        <i data-lucide="upload"></i><span class="strong">3 operações</span>
+        <div class="bar"><i style="width:42%"></i></div>
+        <span class="pct">42%</span><i data-lucide="chevron-up"></i>
+      </div>
+    </div>
+  </main>
+
+  <!-- Painel de detalhes -->
+  <aside class="details">
+    <div class="preview"><svg><use href="#wallpaper"/></svg></div>
+    <div class="d-name">wallpaper.png</div>
+    <div class="d-kind"><i data-lucide="image"></i>Imagem PNG</div>
+    <div class="hr"></div>
+    <dl class="props">
+      <dt>Tamanho</dt><dd>2,4 MB</dd>
+      <dt>Dimensões</dt><dd>3840 × 2160</dd>
+      <dt>Tipo MIME</dt><dd>image/png</dd>
+      <dt>Permissões</dt><dd>Leitura e escrita (rw-r--r--)</dd>
+      <dt>Modificado em</dt><dd>Hoje, 09:42</dd>
+      <dt>Criado em</dt><dd>Hoje, 09:40</dd>
+    </dl>
+    <div class="hr"></div>
+    <div class="tags-head"><span class="lbl">Etiquetas</span></div>
+    <div class="chips"><span class="chip">wallpaper</span><span class="chip">design</span></div>
+    <div class="actions">
+      <button class="btn primary"><i data-lucide="external-link"></i>Abrir com…</button>
+      <button class="btn ghost"><i data-lucide="image"></i>Definir como papel de parede</button>
+    </div>
+  </aside>
+</div>
+
+<!-- Seletor de tema discreto, fora da janela -->
+<label class="theme-picker">Tema
+  <select id="tema" aria-label="Tema"></select>
+  <a href="?grade=1">ver todos</a>
+</label>
+
+<!-- Grade de temas (?grade=1) -->
+<div class="gallery" id="gallery"></div>
+
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM" crossorigin="anonymous"></script>
+<script>
+  var NOMES = {
+    "catppuccin-mocha": "Catppuccin Mocha", "catppuccin-latte": "Catppuccin Latte",
+    "tokyo-night": "Tokyo Night", "gruvbox-dark": "Gruvbox Dark", "rose-pine": "Rosé Pine",
+    "rose-pine-dawn": "Rosé Pine Dawn", "nord": "Nord", "everforest": "Everforest",
+    "kanagawa": "Kanagawa", "dracula": "Dracula", "matte-black": "Matte Black", "decay-green": "Decay Green"
+  };
+  var root = document.documentElement;
+  var sel = document.getElementById("tema");
+  window.__TEMAS.forEach(function (t) {
+    var o = document.createElement("option"); o.value = t; o.textContent = NOMES[t]; sel.appendChild(o);
+  });
+  sel.value = root.getAttribute("data-theme");
+  sel.addEventListener("change", function () {
+    root.setAttribute("data-theme", sel.value);
+    try { localStorage.setItem("lucerna-tema", sel.value); } catch (e) {}
+    var u = new URL(location.href);
+    if (u.searchParams.has("tema")) { u.searchParams.set("tema", sel.value); history.replaceState(null, "", u); }
+  });
+
+  if (root.classList.contains("grade")) {
+    var g = document.getElementById("gallery");
+    var file = location.pathname.split("/").pop();
+    window.__TEMAS.forEach(function (t) {
+      var src = file + "?tema=" + t + "&embed=1";
+      var f = document.createElement("figure");
+      f.innerHTML = '<div class="frame"><iframe loading="lazy" title="' + NOMES[t] + '" src="' + src + '"></iframe></div>' +
+        '<figcaption><a href="?tema=' + t + '">' + NOMES[t] + '</a></figcaption>';
+      g.appendChild(f);
+    });
+  }
+
+  if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>
